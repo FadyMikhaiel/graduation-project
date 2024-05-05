@@ -1,8 +1,18 @@
 import 'dart:convert';
+// import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:progress_project/auth/login.dart';
+import 'package:progress_project/auth/signup.dart';
+import 'package:progress_project/homepage.dart';
+import 'package:progress_project/todolist/todolist.dart';
+// import 'package:progress_project/web_scraping/homepage.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Initialize Firebase
   runApp(MyApp());
 }
 
@@ -14,12 +24,20 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      routes: {
+        "signup": (context) => const SignUp(),
+        "login": (context) => const Login(),
+        "homepage": (context) => const Homepage(),
+        "todolist": (context) => const Todolist(),
+      },
+      home: const SignUp(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({Key? key}) : super(key: key);
+
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
@@ -54,7 +72,9 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     } catch (e) {
       // Handle any errors that occur during the process
-      print('Error: $e');
+      if (kDebugMode) {
+        print('Error: $e');
+      }
     }
   }
 
@@ -62,7 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('API Call Button'),
+        title: const Text('API Call Button'),
       ),
       body: Center(
         child: Column(
@@ -70,34 +90,34 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             ElevatedButton(
               onPressed: fetchData,
-              child: Text('Call API'),
+              child: const Text('Call API'),
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               'Name:',
               style: TextStyle(fontSize: 20),
             ),
             Text(
               _name,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
-            SizedBox(height: 10),
-            Text(
+            const SizedBox(height: 10),
+            const Text(
               'Lectures:',
               style: TextStyle(fontSize: 20),
             ),
             Text(
               _lectures,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
-            SizedBox(height: 10),
-            Text(
+            const SizedBox(height: 10),
+            const Text(
               'Workshops:',
               style: TextStyle(fontSize: 20),
             ),
             Text(
               _workshops,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
           ],
         ),

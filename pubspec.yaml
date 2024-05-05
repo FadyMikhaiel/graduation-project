@@ -69,7 +69,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - C:\Users\fady\StudioProjects\progress_project\progress_project\lib\web_scraping\python_scrapping_script.py
+  #   - C:\Users\fady\StudioProjects\progress_project\progress_project\lib\web_scraping\python_scrapping_script.py
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
