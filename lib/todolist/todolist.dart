@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-
-
+import 'package:intl/intl.dart';
 
 class Todolist extends StatefulWidget {
   const Todolist({Key? key});
@@ -16,19 +15,21 @@ class Todolist extends StatefulWidget {
 }
 
 class _TodolistState extends State<Todolist> {
-   String _name = '';
+  String _name = '';
   List<String> _lectureDetails = [];
   List<String> _workshopDetails = [];
-  
+
   List<Map<String, dynamic>> tasks = [];
   String inputTask = "";
 
   @override
   void initState() {
     super.initState();
+
     // Call fetchData() to get lecture and workshop details
     fetchData();
     // Call getUserTasks() when the page is initialized
+
     getUserTasks().then((userTasks) {
       setState(() {
         tasks = userTasks;
@@ -37,10 +38,12 @@ class _TodolistState extends State<Todolist> {
       print("Error fetching user tasks: $error");
     });
   }
- 
 
   Future<void> fetchData() async {
-    String apiUrl = 'http://127.0.0.1:8000/scrape/'; // Replace with your API endpoint
+    DateTime now = DateTime.now();
+    String dayName = DateFormat('EEEE').format(now);
+    String apiUrl =
+        'http://127.0.0.1:8000/scrape/'; // Replace with your API endpoint
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -48,13 +51,6 @@ class _TodolistState extends State<Todolist> {
       if (response.statusCode == 200) {
         // If the server returns a 200 OK response, parse the JSON
         final data = jsonDecode(response.body);
-
-        // Extract name
-        final name = data['name'][0];
-        setState(() {
-          _name = name != null ? name.toString() : '';
-        });
-
         // Extract lectures
         if (data['lecture'] != null) {
           List lectures = data['lecture'];
@@ -62,7 +58,10 @@ class _TodolistState extends State<Todolist> {
             _lectureDetails = lectures.map<String>((lecture) {
               final parts = lecture.split(',');
               if (parts.length >= 4) {
-                return '${parts[0].trim()} - ${parts[1].trim()} - ${parts[2].trim()} - ${parts[3].trim()}';
+                if (parts[1].trim().split(':')[1].trim() == "Thursday") {
+                  createTask(
+                      'Study lecture: ${parts[0].trim().split(':')[1].trim()}');
+                }
               }
               return '';
             }).toList();
@@ -76,7 +75,10 @@ class _TodolistState extends State<Todolist> {
             _workshopDetails = workshops.map<String>((workshop) {
               final parts = workshop.split(',');
               if (parts.length >= 4) {
-                return '${parts[0].trim()} - ${parts[1].trim()} - ${parts[2].trim()} - ${parts[3].trim()}';
+                if (parts[1].trim().split(':')[1].trim() == "Thursday") {
+                  createTask(
+                      'Study ${parts[0].trim().split(':')[1].trim()} Workshop');
+                }
               }
               return '';
             }).toList();
@@ -90,40 +92,6 @@ class _TodolistState extends State<Todolist> {
       // Handle any errors that occur during the process
       if (kDebugMode) {
         print('Error: $e');
-      }
-    }
-  }
-  void createTasksForToday() {
-    // Get today's date
-    DateTime now = DateTime.now();
-    // String dayName = DateFormat('EEEE').format(now);
-    // print("/////////////////// ${dayName}");
-
-    // Iterate over lecture details
-    for (var lectureDetail in _lectureDetails) {
-      // Assuming the date is the first part of the lecture detail
-      DateTime lectureDate = DateTime.parse(lectureDetail.split('-')[0].trim());
-      if (lectureDate.year == now.year &&
-          lectureDate.month == now.month &&
-          lectureDate.day == now.day) {
-        // Lecture is scheduled for today, create a task
-        String lectureTitle = lectureDetail.split('-')[1].trim();
-        createTask('Attend lecture: $lectureTitle');
-        
-      }
-      
-    }
-
-    // Iterate over workshop details
-    for (var workshopDetail in _workshopDetails) {
-      // Assuming the date is the first part of the workshop detail
-      DateTime workshopDate = DateTime.parse(workshopDetail.split('-')[0].trim());
-      if (workshopDate.year == now.year &&
-          workshopDate.month == now.month &&
-          workshopDate.day == now.day) {
-        // Workshop is scheduled for today, create a task
-        String workshopTitle = workshopDetail.split('-')[1].trim();
-        createTask('Attend workshop: $workshopTitle');
       }
     }
   }
@@ -152,10 +120,13 @@ class _TodolistState extends State<Todolist> {
       };
 
       // Set the task document with the data
-      await documentReference
-          .set(taskData)
-          .then((_) => print("$inputTask created"))
-          .catchError((error) => print("Failed to create task: $error"));
+      await documentReference.set(taskData).then((_) {
+        print("$inputTask created");
+        // Add the new task to the tasks list and update the UI
+        setState(() {
+          tasks.add({'taskTitle': inputTask, 'status': 'todo'});
+        });
+      }).catchError((error) => print("Failed to create task: $error"));
     }
   }
 
@@ -179,6 +150,9 @@ class _TodolistState extends State<Todolist> {
           'status': data['status'] as String
         });
       }
+    });
+    setState(() {
+      this.tasks = tasks;
     });
 
     return tasks;
@@ -215,6 +189,10 @@ class _TodolistState extends State<Todolist> {
     try {
       await tasksRef.doc(task).update({'status': newStatus});
       print("Task status updated successfully");
+      setState(() {
+        tasks.firstWhere((element) => element['taskTitle'] == task)['status'] =
+            newStatus;
+      });
     } catch (error) {
       print("Failed to update task status: $error");
       // Throw the error to handle it further if needed
