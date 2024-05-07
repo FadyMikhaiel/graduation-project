@@ -1,20 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+
+
 
 class Todolist extends StatefulWidget {
-  const Todolist({super.key});
+  const Todolist({Key? key});
 
   @override
   State<Todolist> createState() => _TodolistState();
 }
 
 class _TodolistState extends State<Todolist> {
-  List<String> tasks = [];
+   String _name = '';
+  List<String> _lectureDetails = [];
+  List<String> _workshopDetails = [];
+  
+  List<Map<String, dynamic>> tasks = [];
   String inputTask = "";
+
   @override
   void initState() {
     super.initState();
+    // Call fetchData() to get lecture and workshop details
+    fetchData();
     // Call getUserTasks() when the page is initialized
     getUserTasks().then((userTasks) {
       setState(() {
@@ -24,8 +37,105 @@ class _TodolistState extends State<Todolist> {
       print("Error fetching user tasks: $error");
     });
   }
+ 
 
-  createTask(String inputTask) async {
+  Future<void> fetchData() async {
+    String apiUrl = 'http://127.0.0.1:8000/scrape/'; // Replace with your API endpoint
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+
+      if (response.statusCode == 200) {
+        // If the server returns a 200 OK response, parse the JSON
+        final data = jsonDecode(response.body);
+
+        // Extract name
+        final name = data['name'][0];
+        setState(() {
+          _name = name != null ? name.toString() : '';
+        });
+
+        // Extract lectures
+        if (data['lecture'] != null) {
+          List lectures = data['lecture'];
+          setState(() {
+            _lectureDetails = lectures.map<String>((lecture) {
+              final parts = lecture.split(',');
+              if (parts.length >= 4) {
+                return '${parts[0].trim()} - ${parts[1].trim()} - ${parts[2].trim()} - ${parts[3].trim()}';
+              }
+              return '';
+            }).toList();
+          });
+        }
+
+        // Extract workshops
+        if (data['workshop'] != null) {
+          List workshops = data['workshop'];
+          setState(() {
+            _workshopDetails = workshops.map<String>((workshop) {
+              final parts = workshop.split(',');
+              if (parts.length >= 4) {
+                return '${parts[0].trim()} - ${parts[1].trim()} - ${parts[2].trim()} - ${parts[3].trim()}';
+              }
+              return '';
+            }).toList();
+          });
+        }
+      } else {
+        // If the server returns an error response, throw an exception
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
+      // Handle any errors that occur during the process
+      if (kDebugMode) {
+        print('Error: $e');
+      }
+    }
+  }
+  void createTasksForToday() {
+    // Get today's date
+    DateTime now = DateTime.now();
+    // String dayName = DateFormat('EEEE').format(now);
+    // print("/////////////////// ${dayName}");
+
+    // Iterate over lecture details
+    for (var lectureDetail in _lectureDetails) {
+      // Assuming the date is the first part of the lecture detail
+      DateTime lectureDate = DateTime.parse(lectureDetail.split('-')[0].trim());
+      if (lectureDate.year == now.year &&
+          lectureDate.month == now.month &&
+          lectureDate.day == now.day) {
+        // Lecture is scheduled for today, create a task
+        String lectureTitle = lectureDetail.split('-')[1].trim();
+        createTask('Attend lecture: $lectureTitle');
+        
+      }
+      
+    }
+
+    // Iterate over workshop details
+    for (var workshopDetail in _workshopDetails) {
+      // Assuming the date is the first part of the workshop detail
+      DateTime workshopDate = DateTime.parse(workshopDetail.split('-')[0].trim());
+      if (workshopDate.year == now.year &&
+          workshopDate.month == now.month &&
+          workshopDate.day == now.day) {
+        // Workshop is scheduled for today, create a task
+        String workshopTitle = workshopDetail.split('-')[1].trim();
+        createTask('Attend workshop: $workshopTitle');
+      }
+    }
+  }
+
+  void createTasks(List<dynamic> events) {
+    for (var event in events) {
+      // Assuming the event is a string representing the task
+      createTask(event);
+    }
+  }
+
+  void createTask(String inputTask) async {
     // Get the current user's UID
     String uid = FirebaseAuth.instance.currentUser!.uid;
     if (inputTask != "") {
@@ -36,7 +146,10 @@ class _TodolistState extends State<Todolist> {
           .collection("tasks")
           .doc(inputTask);
 
-      Map<String, String> taskData = {"taskTitle": inputTask, "status": "todo"};
+      Map<String, dynamic> taskData = {
+        "taskTitle": inputTask,
+        "status": "todo" // Initial status is set to "todo"
+      };
 
       // Set the task document with the data
       await documentReference
@@ -46,7 +159,7 @@ class _TodolistState extends State<Todolist> {
     }
   }
 
-  Future<List<String>> getUserTasks() async {
+  Future<List<Map<String, dynamic>>> getUserTasks() async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
 
     // Reference to the tasks collection for the user
@@ -57,11 +170,14 @@ class _TodolistState extends State<Todolist> {
 
     // Query tasks and retrieve their titles
     QuerySnapshot querySnapshot = await tasksRef.get();
-    List<String> tasks = [];
+    List<Map<String, dynamic>> tasks = [];
     querySnapshot.docs.forEach((doc) {
       final data = doc.data() as Map<String, dynamic>?;
       if (data != null && data['taskTitle'] != null) {
-        tasks.add(data['taskTitle'] as String);
+        tasks.add({
+          'taskTitle': data['taskTitle'] as String,
+          'status': data['status'] as String
+        });
       }
     });
 
@@ -78,13 +194,13 @@ class _TodolistState extends State<Todolist> {
 
     await tasksRef.doc(task).delete().then((_) {
       setState(() {
-        tasks.remove(task);
+        tasks.removeWhere((element) => element['taskTitle'] == task);
       });
       print("Task deleted successfully");
     }).catchError((error) => print("Failed to delete task: $error"));
   }
 
-// Function to update task status
+  // Function to update task status
   Future<void> updateTaskStatus(String task, bool isChecked) async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
     CollectionReference tasksRef = FirebaseFirestore.instance
@@ -92,11 +208,12 @@ class _TodolistState extends State<Todolist> {
         .doc(uid)
         .collection("tasks");
 
+    String newStatus = isChecked
+        ? 'done'
+        : 'todo'; // Determine the new status based on isChecked
+
     try {
-      await tasksRef.doc(task).update({'status': isChecked ? 'done' : 'todo'});
-      // setState(() {
-      //   tasks.firstWhere((task) => task['taskTitle'] == task)['status'] = isChecked ? 'done' : 'todo';
-      // });
+      await tasksRef.doc(task).update({'status': newStatus});
       print("Task status updated successfully");
     } catch (error) {
       print("Failed to update task status: $error");
@@ -132,7 +249,7 @@ class _TodolistState extends State<Todolist> {
                       onPressed: () {
                         createTask(inputTask);
                         setState(() {
-                          tasks.add(inputTask);
+                          tasks.add({'taskTitle': inputTask, 'status': 'todo'});
                         });
                         Navigator.of(context).pop();
                       },
@@ -150,75 +267,58 @@ class _TodolistState extends State<Todolist> {
       body: ListView.builder(
           itemCount: tasks.length,
           itemBuilder: (BuildContext context, int index) {
-            String task = tasks[index];
+            String taskTitle = tasks[index]['taskTitle'];
+            String status = tasks[index]['status'];
 
             return Dismissible(
-                key: ValueKey(tasks[index]),
-                onDismissed: (direction) {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text("Delete Task"),
-                        content:
-                            Text("Are you sure you want to delete this task?"),
-                        actions: <Widget>[
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text("Cancel"),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              deleteTask(task);
-                              Navigator.pop(context);
-                            },
-                            child: Text("Delete"),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                child: Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.all(10),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  child: ListTile(
-                    title: Text(tasks[index]),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.delete,
-                        color: Colors.orange,
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text("Delete Task"),
-                              content: Text(
-                                  "Are you sure you want to delete this task?"),
-                              actions: <Widget>[
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text("Cancel"),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    deleteTask(task);
-                                    Navigator.pop(context);
-                                  },
-                                  child: Text("Delete"),
-                                ),
-                              ],
-                            );
+              key: ValueKey(taskTitle),
+              onDismissed: (direction) {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text("Delete Task"),
+                      content:
+                          Text("Are you sure you want to delete this task?"),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            deleteTask(taskTitle);
+                            Navigator.pop(context);
                           },
-                        );
-                      },
-                    ),
+                          child: Text("Delete"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.all(10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListTile(
+                  title: Text(taskTitle),
+                  subtitle: Text(status),
+                  trailing: Checkbox(
+                    value: status == 'done',
+                    onChanged: (isChecked) {
+                      setState(() {
+                        updateTaskStatus(taskTitle, isChecked!);
+                        // Update the local tasks list to reflect the changed status
+                        tasks[index]['status'] = isChecked ? 'done' : 'todo';
+                      });
+                    },
                   ),
-                ));
+                ),
+              ),
+            );
           }),
     );
   }

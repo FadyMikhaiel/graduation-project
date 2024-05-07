@@ -58,16 +58,13 @@ class _LoginState extends State<Login> {
               const Text("Login",
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
               Container(height: 10),
-              const Text("Login To Continue Using The App",
-                  style: TextStyle(color: Colors.grey)),
               Container(height: 20),
               const Text(
                 "Email",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               Container(height: 10),
-              CustomTextForm(
-                  hinttext: "Enter Your Email", mycontroller: email),
+              CustomTextForm(hinttext: "Enter Your Email", mycontroller: email),
               Container(height: 10),
               const Text(
                 "Password",
@@ -76,71 +73,63 @@ class _LoginState extends State<Login> {
               Container(height: 10),
               CustomTextForm(
                   hinttext: "Enter Your Password", mycontroller: password),
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 20),
-                alignment: Alignment.topRight,
-                child: const Text(
-                  "Forgot Password ?",
-                  style: TextStyle(
-                    fontSize: 14,
-                  ),
-                ),
-              ),
+              Container(height: 30),
             ],
           ),
           CustomButtonAuth(
-            title: "login",
-            onPressed: () async {
-              try {
-                final credential = await FirebaseAuth.instance
-                    .signInWithEmailAndPassword(
-                        email: email.text, password: password.text);
-                if (credential.user!.emailVerified) {
-                  Navigator.of(context).pushReplacementNamed("todolist");
-                  // Get and print the user ID
-                  String? userID = await getUserID();
-                  if (userID != null) {
-                    print('User ID: $userID');
+              title: "login",
+              onPressed: () async {
+                try {
+                  final credential = await FirebaseAuth.instance
+                      .signInWithEmailAndPassword(
+                          email: email.text, password: password.text);
+                  if (credential.user!.emailVerified) {
+                    Navigator.of(context).pushNamed("scrapeddata");
+                    // Get and print the user ID
+                    String? userID = await getUserID();
+                    if (userID != null) {
+                      print('User ID: $userID');
+                    } else {
+                      print('User ID not found.');
+                    }
                   } else {
-                    print('User ID not found.');
-                  }
-                } else {
-                  FirebaseAuth.instance.currentUser!.sendEmailVerification();
-                  AwesomeDialog(
-                    context: context,
-                    dialogType: DialogType.info,
-                    animType: AnimType.scale,
-                    title: 'Sorry',
-                    desc:
-                        'you have to verify your Email from your Gmail by press on the link that we sent to you!',
-                  ).show();
-                }
-              } on FirebaseAuthException catch (e) {
-                if (e.code == 'user-not-found') {
-                  if (kDebugMode) {
-                    print('No user found for that email.');
+                    FirebaseAuth.instance.currentUser!.sendEmailVerification();
                     AwesomeDialog(
                       context: context,
-                      dialogType: DialogType.warning,
+                      dialogType: DialogType.info,
                       animType: AnimType.scale,
                       title: 'Sorry',
-                      desc: 'No user found for that email,try to SignUp if you have not to',
+                      desc:
+                          'you have to verify your Email from your Gmail by press on the link that we sent to you!',
                     ).show();
                   }
-                } else if (e.code == 'wrong-password') {
-                  if (kDebugMode) {
-                    print('Wrong password provided for that user.');
-                    AwesomeDialog(
-                      context: context,
-                      dialogType: DialogType.warning,
-                      animType: AnimType.scale,
-                      title: 'Sorry',
-                      desc: 'Wrong password provided for that user',
-                    ).show();
+                } on FirebaseAuthException catch (e) {
+                  if (e.code == 'user-not-found') {
+                    if (kDebugMode) {
+                      print('No user found for that email.');
+                      AwesomeDialog(
+                        context: context,
+                        dialogType: DialogType.warning,
+                        animType: AnimType.scale,
+                        title: 'Sorry',
+                        desc:
+                            'No user found for that email,try to SignUp if you have not to',
+                      ).show();
+                    }
+                  } else if (e.code == 'wrong-password') {
+                    if (kDebugMode) {
+                      print('Wrong password provided for that user.');
+                      AwesomeDialog(
+                        context: context,
+                        dialogType: DialogType.warning,
+                        animType: AnimType.scale,
+                        title: 'Sorry',
+                        desc: 'Wrong password provided for that user',
+                      ).show();
+                    }
                   }
                 }
-              }
-            }),
+              }),
           Container(height: 20),
           InkWell(
             onTap: () {

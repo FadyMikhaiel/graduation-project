@@ -18,8 +18,6 @@ class _SignUpState extends State<SignUp> {
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,16 +31,14 @@ class _SignUpState extends State<SignUp> {
               const Text("SignUp",
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
               Container(height: 10),
-              const Text("SignUp To Continue Using The App",
-                  style: TextStyle(color: Colors.grey)),
               Container(height: 20),
               const Text(
-                "userID",
+                "ID",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               Container(height: 10),
               CustomTextForm(hinttext: "ُEnter Your ID", mycontroller: userid),
-              Container(height: 20),
+              Container(height: 10),
               const Text(
                 "Email",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -58,16 +54,7 @@ class _SignUpState extends State<SignUp> {
               Container(height: 10),
               CustomTextForm(
                   hinttext: "ُEnter Your Password", mycontroller: password),
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 20),
-                alignment: Alignment.topRight,
-                child: const Text(
-                  "Forgot Password ?",
-                  style: TextStyle(
-                    fontSize: 14,
-                  ),
-                ),
-              ),
+              Container(height: 15)
             ],
           ),
           //signup function----------------------
@@ -120,9 +107,9 @@ class _SignUpState extends State<SignUp> {
                   }
                 }
               }),
-          Container(height: 20),
+          Container(height: 10),
           // Text("Don't Have An Account ? Resister" , textAlign: TextAlign.center,)
-             InkWell(
+          InkWell(
             onTap: () {
               Navigator.of(context).pushNamed("login");
             },
