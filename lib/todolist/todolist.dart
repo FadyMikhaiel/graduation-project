@@ -58,13 +58,14 @@ class _TodolistState extends State<Todolist> {
             _lectureDetails = lectures.map<String>((lecture) {
               final parts = lecture.split(',');
               if (parts.length >= 4) {
-                if (parts[1].trim().split(':')[1].trim() == "Thursday") {
+                if (parts[1].trim().split(':')[1].trim() == "Monday") {
                   createTask(
                       'Study lecture: ${parts[0].trim().split(':')[1].trim()}');
                 }
               }
               return '';
             }).toList();
+            print('fetchdata tasks: $tasks');
           });
         }
 
@@ -75,7 +76,7 @@ class _TodolistState extends State<Todolist> {
             _workshopDetails = workshops.map<String>((workshop) {
               final parts = workshop.split(',');
               if (parts.length >= 4) {
-                if (parts[1].trim().split(':')[1].trim() == "Thursday") {
+                if (parts[1].trim().split(':')[1].trim() == "Monday") {
                   createTask(
                       'Study ${parts[0].trim().split(':')[1].trim()} Workshop');
                 }
@@ -96,17 +97,17 @@ class _TodolistState extends State<Todolist> {
     }
   }
 
-  void createTasks(List<dynamic> events) {
-    for (var event in events) {
-      // Assuming the event is a string representing the task
-      createTask(event);
-    }
-  }
+  // void createTasks(List<dynamic> events) {
+  //   for (var event in events) {
+  //     // Assuming the event is a string representing the task
+  //     createTask(event);
+  //   }
+  // }
 
   void createTask(String inputTask) async {
     // Get the current user's UID
     String uid = FirebaseAuth.instance.currentUser!.uid;
-    if (inputTask != "") {
+    if (inputTask.isNotEmpty) {
       // Reference to the document with user's UID as part of the path
       DocumentReference documentReference = FirebaseFirestore.instance
           .collection("users")
@@ -123,10 +124,15 @@ class _TodolistState extends State<Todolist> {
       await documentReference.set(taskData).then((_) {
         print("$inputTask created");
         // Add the new task to the tasks list and update the UI
+        print("create task tasks :$tasks");
         setState(() {
           tasks.add({'taskTitle': inputTask, 'status': 'todo'});
         });
       }).catchError((error) => print("Failed to create task: $error"));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Empty task is not allowed.'),
+      ));
     }
   }
 
@@ -154,7 +160,7 @@ class _TodolistState extends State<Todolist> {
     setState(() {
       this.tasks = tasks;
     });
-
+    print("getUserTasks: $tasks");
     return tasks;
   }
 
@@ -171,6 +177,7 @@ class _TodolistState extends State<Todolist> {
         tasks.removeWhere((element) => element['taskTitle'] == task);
       });
       print("Task deleted successfully");
+      print("deleteTask: $tasks");
     }).catchError((error) => print("Failed to delete task: $error"));
   }
 
@@ -225,11 +232,15 @@ class _TodolistState extends State<Todolist> {
                   actions: <Widget>[
                     TextButton(
                       onPressed: () {
-                        createTask(inputTask);
-                        setState(() {
-                          tasks.add({'taskTitle': inputTask, 'status': 'todo'});
-                        });
-                        Navigator.of(context).pop();
+                        if (inputTask.isNotEmpty) {
+                          createTask(inputTask);
+                          Navigator.of(context).pop();
+                        } else {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(const SnackBar(
+                            content: Text('Empty task is not allowed.'),
+                          ));
+                        }
                       },
                       child: const Text("Add"),
                     )
@@ -243,61 +254,70 @@ class _TodolistState extends State<Todolist> {
         ),
       ),
       body: ListView.builder(
-          itemCount: tasks.length,
-          itemBuilder: (BuildContext context, int index) {
-            String taskTitle = tasks[index]['taskTitle'];
-            String status = tasks[index]['status'];
+        itemCount: tasks.length,
+        itemBuilder: (BuildContext context, int index) {
+          String taskTitle = tasks[index]['taskTitle'];
+          String status = tasks[index]['status'];
 
-            return Dismissible(
-              key: ValueKey(taskTitle),
-              onDismissed: (direction) {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: Text("Delete Task"),
-                      content:
-                          Text("Are you sure you want to delete this task?"),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text("Cancel"),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            deleteTask(taskTitle);
-                            Navigator.pop(context);
-                          },
-                          child: Text("Delete"),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              child: Card(
-                elevation: 4,
-                margin: const EdgeInsets.all(10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListTile(
-                  title: Text(taskTitle),
-                  subtitle: Text(status),
-                  trailing: Checkbox(
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.all(10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              title: Text(taskTitle),
+              subtitle: Text(status),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
                     value: status == 'done',
                     onChanged: (isChecked) {
                       setState(() {
                         updateTaskStatus(taskTitle, isChecked!);
-                        // Update the local tasks list to reflect the changed status
-                        tasks[index]['status'] = isChecked ? 'done' : 'todo';
                       });
                     },
                   ),
-                ),
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text("Delete Task"),
+                            content: Text(
+                                "Are you sure you want to delete this task?"),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text("Cancel"),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  // tasks.removeWhere((element) => element['taskTitle'] == taskTitle);
+                                  deleteTask(taskTitle);
+                                  Navigator.pop(context);
+                                  print(
+                                      "/////////////////////////////////////////////////$tasks");
+                                },
+                                child: Text("Delete"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
               ),
-            );
-          }),
+            ),
+          );
+        },
+      ),
     );
   }
 }
