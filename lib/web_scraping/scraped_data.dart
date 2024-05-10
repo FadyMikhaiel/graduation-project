@@ -14,7 +14,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String _name = '';
   List<String> _lectureDetails = [];
   List<String> _workshopDetails = [];
-  
+  int _selectedIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -84,22 +85,22 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            ElevatedButton(
-              onPressed: fetchData,
-              child: const Text('Call API'),
-            ),
+           
             const SizedBox(height: 20),
+           Container(
+
+            ),
             const Text(
-              'Name:',
+              'Welcome',
               style: TextStyle(fontSize: 20),
             ),
             Text(
               _name,
               style: const TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 10),
+            //const SizedBox(height: 10),
             const Text(
               'Lecture Details:',
               style: TextStyle(fontSize: 20),
@@ -128,6 +129,35 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+        bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.task),
+            label: 'Tasks',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        onTap: (index) {
+       if (index == 0) {
+          setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.of(context).pushNamed("scrapeddata");
+
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.of(context).pushNamed("todolist");
+          }
+        },
+      ),
+      
     );
   }
 }

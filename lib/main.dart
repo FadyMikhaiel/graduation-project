@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 // import 'package:http/http.dart' as http;
 import 'package:progress_project/auth/login.dart';
 import 'package:progress_project/auth/signup.dart';
-import 'package:progress_project/homepage.dart';
 import 'package:progress_project/todolist/todolist.dart';
 import 'package:progress_project/web_scraping/scraped_data.dart';
 // import 'package:progress_project/web_scraping/homepage.dart';
@@ -17,7 +16,17 @@ void main() async {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  MyApp({super.key});
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+class _MyAppState extends State<MyApp>{
+  // int selectedIndex = 0;
+  // final List<Widget> _pages = [
+  //   const MyHomePage(),
+  //   const Todolist(),
+  // ];
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,12 +38,10 @@ class MyApp extends StatelessWidget {
       routes: {
         "signup": (context) => const SignUp(),
         "login": (context) => const Login(),
-        "homepage": (context) => const Homepage(),
         "todolist": (context) => const Todolist(),
-        "scrapeddata":(context) => const MyHomePage()
+        "scrapeddata": (context) => const MyHomePage()
       },
-      home: const Todolist(),
+      home: const SignUp(),
     );
   }
 }
-

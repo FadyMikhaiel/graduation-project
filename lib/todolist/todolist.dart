@@ -18,6 +18,7 @@ class _TodolistState extends State<Todolist> {
   String _name = '';
   List<String> _lectureDetails = [];
   List<String> _workshopDetails = [];
+  int _selectedIndex = 1;
 
   List<Map<String, dynamic>> tasks = [];
   String inputTask = "";
@@ -58,7 +59,7 @@ class _TodolistState extends State<Todolist> {
             _lectureDetails = lectures.map<String>((lecture) {
               final parts = lecture.split(',');
               if (parts.length >= 4) {
-                if (parts[1].trim().split(':')[1].trim() == "Monday") {
+                if (parts[1].trim().split(':')[1].trim() == dayName) {
                   createTask(
                       'Study lecture: ${parts[0].trim().split(':')[1].trim()}');
                 }
@@ -316,6 +317,34 @@ class _TodolistState extends State<Todolist> {
               ),
             ),
           );
+        },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.task),
+            label: 'Tasks',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        onTap: (index) {
+       if (index == 0) {
+          setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.of(context).pushReplacementNamed("scrapeddata");
+
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.of(context).pushReplacementNamed("todolist");
+          }
         },
       ),
     );
