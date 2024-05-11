@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart';
 // import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 // import 'package:http/http.dart' as http;
 import 'package:progress_project/auth/login.dart';
 import 'package:progress_project/auth/signup.dart';
@@ -14,6 +15,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(); // Initialize Firebase
   runApp(MyApp());
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+    AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
 }
 
 class MyApp extends StatefulWidget {
@@ -31,7 +36,7 @@ class _MyAppState extends State<MyApp>{
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'API Call Button',
+      title: 'Progress App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),

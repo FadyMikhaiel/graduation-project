@@ -27,12 +27,12 @@ class _TodolistState extends State<Todolist> {
   @override
   void initState() {
     super.initState();
-                AlarmService.mainFun();
+    // AlarmService.mainFun();
 
     // Call fetchData() to get lecture and workshop details
     fetchData();
-    // Call getUserTasks() when the page is initialized
 
+    // Call getUserTasks() when the page is initialized
     getUserTasks().then((userTasks) {
       setState(() {
         tasks = userTasks;
@@ -42,12 +42,39 @@ class _TodolistState extends State<Todolist> {
     });
   }
 
+// Function to get user ID
+  Future<String?> getUserID() async {
+    try {
+      // Get the current user
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Retrieve user document from Firestore
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        // Get the userID field from the document
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String? userID = userData['userID'];
+
+        return userID;
+      } else {
+        // User is not logged in
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting user ID: $e');
+      }
+      return null;
+    }
+  }
+
   Future<void> fetchData() async {
     DateTime now = DateTime.now();
     String dayName = DateFormat('EEEE').format(now);
-    String apiUrl =
-        'http://127.0.0.1:8000/scrape/'; // Replace with your API endpoint
-
+    String? userID = await getUserID();
+    String apiUrl = 'http://127.0.0.1:8000/scrape/${userID}/';
     try {
       final response = await http.get(Uri.parse(apiUrl));
 
@@ -58,17 +85,17 @@ class _TodolistState extends State<Todolist> {
         if (data['lecture'] != null) {
           List lectures = data['lecture'];
           setState(() {
-            _lectureDetails = lectures.map<String>((lecture)  {
+            _lectureDetails = lectures.map<String>((lecture) {
               final parts = lecture.split(',');
               if (parts.length >= 4) {
-                if (parts[1].trim().split(':')[1].trim() == "Monday") {
-                AlarmService.scheduleAlarm('test','testbody');
-                print('[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[object]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]')
-               ;   createTask(
-                      'Study lecture: ${parts[0].trim().split(':')[1].trim()}');
+                if (parts[1].trim().split(':')[1].trim() == dayName) {
+                  AlarmService.scheduleAlarm(
+                      'Attention',
+                      'You have: ${parts[0].trim().split(':')[1].trim()} today!');
+                  createTask(
+                      'Study ${parts[0].trim().split(':')[1].trim()} lecture');
                 }
               }
-              
 
               return '';
             }).toList();
@@ -83,12 +110,10 @@ class _TodolistState extends State<Todolist> {
             _workshopDetails = workshops.map<String>((workshop) {
               final parts = workshop.split(',');
               if (parts.length >= 4) {
-                if (parts[1].trim().split(':')[1].trim() == "Monday") {
-                AlarmService.scheduleAlarm('test','testboxy');
-                 
+                if (parts[1].trim().split(':')[1].trim() == dayName) {
+                  AlarmService.scheduleAlarm('Attention', 'You have: ${parts[0].trim().split(':')[1].trim()} today!');
                   createTask(
                       'Study ${parts[0].trim().split(':')[1].trim()} Workshop');
-
                 }
               }
               return '';
@@ -107,38 +132,38 @@ class _TodolistState extends State<Todolist> {
     }
   }
 
-  // void createTasks(List<dynamic> events) {
-  //   for (var event in events) {
-  //     // Assuming the event is a string representing the task
-  //     createTask(event);
-  //   }
-  // }
-
   void createTask(String inputTask) async {
     // Get the current user's UID
     String uid = FirebaseAuth.instance.currentUser!.uid;
     if (inputTask.isNotEmpty) {
-      // Reference to the document with user's UID as part of the path
-      DocumentReference documentReference = FirebaseFirestore.instance
-          .collection("users")
-          .doc(uid)
-          .collection("tasks")
-          .doc(inputTask);
+      // Check if the task already exists in the tasks list
+      bool taskExists = tasks.any((task) => task['taskTitle'] == inputTask);
 
-      Map<String, dynamic> taskData = {
-        "taskTitle": inputTask,
-        "status": "todo" // Initial status is set to "todo"
-      };
+      if (!taskExists) {
+        // Reference to the document with user's UID as part of the path
+        DocumentReference documentReference = FirebaseFirestore.instance
+            .collection("users")
+            .doc(uid)
+            .collection("tasks")
+            .doc(inputTask);
 
-      // Set the task document with the data
-      await documentReference.set(taskData).then((_) {
-        print("$inputTask created");
-        // Add the new task to the tasks list and update the UI
-        print("create task tasks :$tasks");
-        setState(() {
-          tasks.add({'taskTitle': inputTask, 'status': 'todo'});
-        });
-      }).catchError((error) => print("Failed to create task: $error"));
+        Map<String, dynamic> taskData = {
+          "taskTitle": inputTask,
+          "status": "todo" // Initial status is set to "todo"
+        };
+
+        // Set the task document with the data
+        await documentReference.set(taskData).then((_) {
+          print("$inputTask created");
+          // Add the new task to the tasks list and update the UI
+          print("create task tasks :$tasks");
+          setState(() {
+            tasks.add({'taskTitle': inputTask, 'status': 'todo'});
+          });
+        }).catchError((error) => print("Failed to create task: $error"));
+      } else {
+        print('Task already exists.');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Empty task is not allowed.'),
@@ -342,12 +367,11 @@ class _TodolistState extends State<Todolist> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
         onTap: (index) {
-       if (index == 0) {
-          setState(() {
+          if (index == 0) {
+            setState(() {
               _selectedIndex = index;
             });
             Navigator.of(context).pushReplacementNamed("scrapeddata");
-
           } else {
             setState(() {
               _selectedIndex = index;

@@ -52,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   Future<void> fetchData() async {
     String? userID = await getUserID();
-    String apiUrl = 'http://127.0.0.1:8000/scrape/'; // Replace with your API endpoint
+    String apiUrl = 'http://127.0.0.1:8000/scrape/1951710016/'; 
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -110,7 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('API Call Button'),
+        title: const Text('Schedules'),
       ),
       body: Center(
         child: Column(
@@ -176,13 +176,13 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
               _selectedIndex = index;
             });
-            Navigator.of(context).pushNamed("scrapeddata");
+            Navigator.of(context).pushReplacementNamed("scrapeddata");
 
           } else {
             setState(() {
               _selectedIndex = index;
             });
-            Navigator.of(context).pushNamed("todolist");
+            Navigator.of(context).pushReplacementNamed("todolist");
           }
         },
       ),
