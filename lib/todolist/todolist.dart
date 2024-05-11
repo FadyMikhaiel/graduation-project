@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:intl/intl.dart';
+import 'package:progress_project/alarm/alarm.dart';
 
 class Todolist extends StatefulWidget {
   const Todolist({Key? key});
@@ -26,6 +27,7 @@ class _TodolistState extends State<Todolist> {
   @override
   void initState() {
     super.initState();
+                AlarmService.mainFun();
 
     // Call fetchData() to get lecture and workshop details
     fetchData();
@@ -56,14 +58,18 @@ class _TodolistState extends State<Todolist> {
         if (data['lecture'] != null) {
           List lectures = data['lecture'];
           setState(() {
-            _lectureDetails = lectures.map<String>((lecture) {
+            _lectureDetails = lectures.map<String>((lecture)  {
               final parts = lecture.split(',');
               if (parts.length >= 4) {
-                if (parts[1].trim().split(':')[1].trim() == dayName) {
-                  createTask(
+                if (parts[1].trim().split(':')[1].trim() == "Monday") {
+                AlarmService.scheduleAlarm('test','testbody');
+                print('[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[object]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]')
+               ;   createTask(
                       'Study lecture: ${parts[0].trim().split(':')[1].trim()}');
                 }
               }
+              
+
               return '';
             }).toList();
             print('fetchdata tasks: $tasks');
@@ -78,8 +84,11 @@ class _TodolistState extends State<Todolist> {
               final parts = workshop.split(',');
               if (parts.length >= 4) {
                 if (parts[1].trim().split(':')[1].trim() == "Monday") {
+                AlarmService.scheduleAlarm('test','testboxy');
+                 
                   createTask(
                       'Study ${parts[0].trim().split(':')[1].trim()} Workshop');
+
                 }
               }
               return '';

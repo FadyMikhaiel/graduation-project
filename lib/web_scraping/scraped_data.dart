@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -21,8 +23,35 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     fetchData();
   }
+// Function to get user ID
+  Future<String?> getUserID() async {
+    try {
+      // Get the current user
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Retrieve user document from Firestore
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        // Get the userID field from the document
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String? userID = userData['userID'];
 
+        return userID;
+      } else {
+        // User is not logged in
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting user ID: $e');
+      }
+      return null;
+    }
+  }
   Future<void> fetchData() async {
+    String? userID = await getUserID();
     String apiUrl = 'http://127.0.0.1:8000/scrape/'; // Replace with your API endpoint
 
     try {
